@@ -1,24 +1,51 @@
-const conn = require('./utils/mysql')
+const conn = require('./utils/mysql');
 
-const sqlInfo = (sql)=>{
-    return new Promise((resolve, reject) => {
-        //先查询userInfo是否在数据库中
-        conn.query(...sql, (err, result) => {
-            if (err) return reject(err.message)
-            resolve(JSON.parse(JSON.stringify(result)))
-        })
+const sqlInfo = (sql) => {
+  return new Promise((resolve, reject) => {
+    //先查询userInfo是否在数据库中
+
+    conn.query(...sql, (err, result) => {
+      if (err) return reject(err.message);
+      resolve(JSON.parse(JSON.stringify(result)));
     });
-} 
-module.exports = async (userInfo) => {
-    
-    //获取数据库中所有数据
-    const sqlInfo1 = await sqlInfo(['SELECT `openid` FROM `user_info` '])
-    
-    if(!Object.values(sqlInfo1).includes(userInfo.openid)){
-        await sqlInfo(['INSERT user_info set ?',userInfo])
-    }
+  });
+};
 
-}
+module.exports = async (userInfo) => {
+  //获取数据库中所有数据
+  const tempsqlInfo = await sqlInfo(['SELECT openid FROM user_info']);
+  //检测数组中每个对象是否和用户openid都不相等，是则返回true
+  const temp = Object.values(tempsqlInfo).every((item) => {
+    return item.openid !== userInfo.openid;
+  });
+  try {
+    if (temp) {
+      const result = await sqlInfo(['INSERT user_info set ?', userInfo]);
+      console.log(result);
+      await sqlInfo([
+        'INSERT user_score set ?',
+        { openid: userInfo.openid, score: 100 }
+      ]);
+      //返回用户插入的数据
+      return result;
+    } else {
+      const user_info = ({ data } = await sqlInfo([
+        'select * from user_info where openid = ? ',
+        userInfo.openid
+      ]));
+      const user_score = ({ data } = await sqlInfo([
+        'select * from user_score where openid = ? ',
+        userInfo.openid
+      ]));
+      return {
+        user_info,
+        user_score
+      };
+    }
+  } catch (e) {
+    return e;
+  }
+};
 
 // const select = (selectObj) => {
 //     return new Promise((resolve, reject) => {
