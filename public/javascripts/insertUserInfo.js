@@ -13,17 +13,17 @@ const sqlInfo = (sql) => {
 
 module.exports = async (userInfo) => {
   //获取数据库中所有数据
-  const tempsqlInfo = await sqlInfo(['SELECT openid FROM user_info']);
+  const tempsqlInfo = await sqlInfo(['select openid from user_info']);
   //检测数组中每个对象是否和用户openid都不相等，是则返回true
   const temp = Object.values(tempsqlInfo).every((item) => {
     return item.openid !== userInfo.openid;
   });
   try {
     if (temp) {
-      const result = await sqlInfo(['INSERT user_info set ?', userInfo]);
+      const result = await sqlInfo(['insert user_info set ?', userInfo]);
       console.log(result);
       await sqlInfo([
-        'INSERT user_score set ?',
+        'insert user_score set ?',
         { openid: userInfo.openid, score: 100 }
       ]);
       //返回用户插入的数据
